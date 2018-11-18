@@ -1,0 +1,12 @@
+{
+	"//": "This is used in our build process. Also this file is requred by VSCode",
+	"compilerOptions": {
+		"declaration": true,
+		"experimentalDecorators": true,
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"noImplicitAny": true,
+		"target": "es6",
+		"strictNullChecks": true
+	}
+}
