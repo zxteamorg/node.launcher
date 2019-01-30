@@ -41,7 +41,9 @@ export function launcher<T>(...args: Array<any>): void {
 		const runtime = await runtimeFactory(configuration);
 
 		async function gracefulShutdown(signal: string) {
-			log.info(`Interrupt signal received: ${signal}`);
+			if (log.isInfoEnabled) {
+				log.info(`Interrupt signal received: ${signal}`);
+			}
 			await runtime.destroy();
 			process.exit(0);
 		}
@@ -51,12 +53,18 @@ export function launcher<T>(...args: Array<any>): void {
 
 	log.info("Starting application...");
 	run()
-		.then(() => log.info(`Application was started. Process ID: ${process.pid}`))
+		.then(() => {
+			if (log.isInfoEnabled) {
+				log.info(`Application was started. Process ID: ${process.pid}`);
+			}
+		})
 		.catch(reason => {
-			if (reason instanceof LaunchError) {
-				log.fatal(`Cannot launch the application due an error: ${reason.message}`);
-			} else {
-				log.fatal(reason.message, reason);
+			if (log.isFatalEnabled) {
+				if (reason instanceof LaunchError) {
+					log.fatal(`Cannot launch the application due an error: ${reason.message}`);
+				} else {
+					log.fatal(reason.message, reason);
+				}
 			}
 			if (process.env.NODE_ENV === "development") {
 				setTimeout(() => process.exit(127), 1000);
