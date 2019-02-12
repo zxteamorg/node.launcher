@@ -1,7 +1,7 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "0.0.1",
-	"description": "TBD",
+	"version": "2.0.0",
+	"description": "ZXTeam's Service Launcher",
 	"author": {
 		"name": "Maxim Anurin",
 		"email": "maxim.anurin@zxteam.org",
@@ -15,11 +15,11 @@
 	],
 	"license": "MIT",
 	"devDependencies": {
-		"@types/node": "^10.12.9",
+		"@types/node": "^10.12.24",
 		"@zxnode/build": "0.0.30"
 	},
 	"dependencies": {
-		"@zxteam/logger": "0.0.3"
+		"@zxteam/logger": "^2.0.0"
 	},
 	"keywords": [],
 	"repository": {
