@@ -6,7 +6,7 @@
 		"module": "commonjs",
 		"moduleResolution": "node",
 		"noImplicitAny": true,
-		"target": "es6",
+		"target": "es2018",
 		"strictNullChecks": true
 	}
 }

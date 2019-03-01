@@ -21,7 +21,7 @@ export function launcher<T>(...args: Array<any>): void {
 
 	async function run() {
 		process.on("unhandledRejection", reason => {
-			log.fatal("Unhandled Rejection: ", reason);
+			log.fatal("Unhandled Rejection", reason);
 			process.exit(255);
 		});
 
@@ -40,12 +40,19 @@ export function launcher<T>(...args: Array<any>): void {
 		const configuration = await configurationFactory();
 		const runtime = await runtimeFactory(configuration);
 
+		let destroyRequestCount = 0;
 		async function gracefulShutdown(signal: string) {
-			if (log.isInfoEnabled) {
-				log.info(`Interrupt signal received: ${signal}`);
+			if (destroyRequestCount++ === 0) {
+				if (log.isInfoEnabled) {
+					log.info(`Interrupt signal received: ${signal}`);
+				}
+				await runtime.destroy();
+				process.exit(0);
+			} else {
+				if (log.isInfoEnabled) {
+					log.info(`Interrupt signal (${destroyRequestCount}) received: ${signal}`);
+				}
 			}
-			await runtime.destroy();
-			process.exit(0);
 		}
 
 		["SIGTERM", "SIGINT"].forEach((signal: NodeJS.Signals) => process.on(signal, () => gracefulShutdown(signal)));

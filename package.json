@@ -1,6 +1,6 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"description": "ZXTeam's Service Launcher",
 	"author": {
 		"name": "Maxim Anurin",
@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@types/node": "^10.12.24",
-		"@zxnode/build": "0.0.30"
+		"@zxnode/build": "0.0.32"
 	},
 	"dependencies": {
 		"@zxteam/logger": "^2.0.0"
@@ -32,7 +32,7 @@
 	"homepage": "https://dev.zxteam.net/pub/node/launcher",
 	"scripts": {
 		"build": "zxbuild clean dist",
-		"test": "nyc --exclude submodules --exclude test --reporter=lcov --reporter=text --reporter=text-summary mocha 'test/**/*.test.js' --recursive"
+		"test": "nyc --exclude submodules --exclude test --reporter=lcov --reporter=text --reporter=text-summary mocha  --recursive \"test/**/*.test.js\""
 	},
 	"private": true
 }
