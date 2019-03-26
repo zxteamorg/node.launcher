@@ -1,6 +1,6 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "2.0.1",
+	"version": "3.0.2",
 	"description": "ZXTeam's Service Launcher",
 	"author": {
 		"name": "Maxim Anurin",
@@ -10,16 +10,19 @@
 	"contributors": [
 		{
 			"name": "Serg Zgama",
-			"email": "serg.zgama@zxteam.org"
+			"email": "serhii.zghama@zxteam.org"
 		}
 	],
 	"license": "MIT",
+	"dependencies": {
+		"@zxteam/logger": "^3.0.2"
+	},
 	"devDependencies": {
-		"@types/node": "^10.12.24",
+		"@types/node": "^11.11.7",
 		"@zxnode/build": "0.0.32"
 	},
-	"dependencies": {
-		"@zxteam/logger": "^2.0.0"
+	"engines": {
+		"node": ">=11"
 	},
 	"keywords": [],
 	"repository": {
