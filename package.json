@@ -9,13 +9,13 @@
 	},
 	"contributors": [
 		{
-			"name": "Serg Zgama",
+			"name": "Serhii Zghama",
 			"email": "serhii.zghama@zxteam.org"
 		}
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@zxteam/logger": "^3.0.2"
+		"@zxteam/logger": "^3.2.1"
 	},
 	"devDependencies": {
 		"@types/node": "^11.11.7",
