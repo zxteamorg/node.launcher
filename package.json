@@ -1,6 +1,6 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "3.2.1",
+	"version": "3.2.4",
 	"description": "ZXTeam's Service Launcher",
 	"author": {
 		"name": "Maxim Anurin",
@@ -18,8 +18,8 @@
 		"@zxteam/logger": "^3.2.1"
 	},
 	"devDependencies": {
-		"@types/node": "^11.11.7",
-		"@zxnode/build": "0.0.32"
+		"@types/node": "^11.13.8",
+		"@zxnode/build": "^0.0.33"
 	},
 	"engines": {
 		"node": ">=11"

@@ -95,4 +95,4 @@ export async function loadConfiguration(): Promise<any> {
 export default launcher;
 
 
-class LaunchError extends Error { }
+export class LaunchError extends Error { }
