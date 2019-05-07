@@ -28,7 +28,7 @@ export function launcher<T>(...args: Array<any>): void {
 		let configurationFactory: ConfigurationFactory<T>;
 		let runtimeFactory: RuntimeFactory<T>;
 		if (args.length === 1 && typeof args[0] === "function") {
-			configurationFactory = loadConfiguration;
+			configurationFactory = jsonConfigurationFactory;
 			runtimeFactory = args[0];
 		} else if (args.length === 2 && typeof args[0] === "function" && typeof args[1] === "function") {
 			configurationFactory = args[0];
@@ -81,7 +81,7 @@ export function launcher<T>(...args: Array<any>): void {
 		});
 }
 
-export async function loadConfiguration(): Promise<any> {
+export async function jsonConfigurationFactory(): Promise<any> {
 	const configFileArg = process.argv.find(w => w.startsWith("--config="));
 	if (configFileArg !== undefined) {
 		const configFile = configFileArg.substring(9); // Cut --config=

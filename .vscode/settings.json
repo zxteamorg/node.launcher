@@ -20,21 +20,15 @@
 	"files.eol": "\n",
 	"files.exclude": {
 		".dist": true,
+		".nyc_output": true,
 		".package": true,
 		"node_modules": true,
-		"src/**/*.d.ts": {
-			"when": "$(basename).ts"
-		},
-		"test/**/*.d.ts": {
-			"when": "$(basename).ts"
-		},
-		"**/*.map": {
-			"when": "$(basename).ts"
-		},
-		"**/*.js": {
-			"when": "$(basename).ts"
-		},
-		"package-lock.json": true
+		"src/**/*.d.ts": true,
+		"src/**/*.js": true,
+		"src/**/*.map": true,
+		"test/**/*.d.ts":true,
+		"test/**/*.js":true,
+		"test/**/*.map":true
 	},
 	"git.enabled": true
 }
