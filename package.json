@@ -1,13 +1,18 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "4.0.0",
+	"version": "5.0.1",
 	"description": "ZXTeam's Service Launcher",
 	"author": {
-		"name": "Maxim Anurin",
-		"email": "maxim.anurin@zxteam.org",
-		"url": "http://www.anurin.name"
+		"name": "ZXTeam",
+		"email": "pub@project.zxteam.org",
+		"url": "http://www.zxteam.org"
 	},
 	"contributors": [
+		{
+			"name": "Maxim Anurin",
+			"email": "maxim.anurin@zxteam.org",
+			"url": "http://www.anurin.name"
+		},
 		{
 			"name": "Serhii Zghama",
 			"email": "serhii.zghama@zxteam.org"
@@ -15,11 +20,13 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@zxteam/logger": "^4.0.0"
+		"@zxteam/configuration": "^5.0.1",
+		"@zxteam/contract": "^5.0.1",
+		"@zxteam/logger": "^5.0.1"
 	},
 	"devDependencies": {
-		"@types/node": "^11.13.10",
-		"@zxnode/build": "^0.0.33"
+		"@types/node": "^11.13.15",
+		"@zxnode/build": "^0.0.34"
 	},
 	"engines": {
 		"node": ">=11"

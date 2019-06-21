@@ -1,3 +1,6 @@
+import * as zxteam from "@zxteam/contract";
+import * as cfg from "@zxteam/configuration";
+
 import * as fs from "fs";
 import * as util from "util";
 
@@ -81,16 +84,31 @@ export function launcher<T>(...args: Array<any>): void {
 		});
 }
 
-export async function jsonConfigurationFactory(): Promise<any> {
-	const configFileArg = process.argv.find(w => w.startsWith("--config="));
-	if (configFileArg !== undefined) {
-		const configFile = configFileArg.substring(9); // Cut --config=
-		const configFileData = await readFile(configFile);
-		const configuration = JSON.parse(configFileData.toString());
-		return configuration;
-	}
-	throw new LaunchError("An argument --config is not passed");
+export function jsonConfigurationFactory(): Promise<any> {
+	return Promise.resolve().then(async () => {
+		const configFileArg = process.argv.find(w => w.startsWith("--config="));
+		if (configFileArg !== undefined) {
+			const configFile = configFileArg.substring(9); // Cut --config=
+			const configFileData = await readFile(configFile);
+			const configuration = JSON.parse(configFileData.toString());
+			return configuration;
+		}
+		throw new LaunchError("An argument --config is not passed");
+	});
 }
+
+export function fileConfigurationFactory<T>(parser: (configuration: zxteam.Configuration) => T): Promise<T> {
+	return Promise.resolve().then(() => {
+		const configFileArg = process.argv.find(w => w.startsWith("--config="));
+		if (configFileArg !== undefined) {
+			const configFile = configFileArg.substring(9); // Cut --config=
+			return parser(cfg.fileConfiguration(configFile));
+		}
+		throw new LaunchError("An argument --config is not passed");
+	});
+}
+
+
 
 export default launcher;
 
