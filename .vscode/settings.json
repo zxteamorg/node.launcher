@@ -30,5 +30,6 @@
 		"test/**/*.js":true,
 		"test/**/*.map":true
 	},
-	"git.enabled": true
+	"git.enabled": true,
+	"git.rebaseWhenSync": true
 }

@@ -1,6 +1,6 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "5.0.1",
+	"version": "6.0.1",
 	"description": "ZXTeam's Service Launcher",
 	"author": {
 		"name": "ZXTeam",
@@ -20,12 +20,12 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@zxteam/configuration": "^5.0.1",
-		"@zxteam/contract": "^5.0.1",
-		"@zxteam/logger": "^5.0.1"
+		"@zxteam/configuration": "^6.0.1",
+		"@zxteam/contract": "^6.0.1",
+		"@zxteam/logger": "^6.0.1"
 	},
 	"devDependencies": {
-		"@types/node": "^11.13.15",
+		"@types/node": "^11.13.17",
 		"@zxnode/build": "^0.0.34"
 	},
 	"engines": {
@@ -42,7 +42,8 @@
 	"homepage": "https://dev.zxteam.net/pub/node/launcher",
 	"scripts": {
 		"build": "zxbuild clean dist",
-		"test": "nyc --exclude submodules --exclude test --reporter=lcov --reporter=text --reporter=text-summary mocha  --recursive \"test/**/*.test.js\""
+		"test": "nyc --exclude test --extension=\".ts\" --reporter=lcov --reporter=text --reporter=text-summary mocha \"test/**/*.test.js\" --recursive",
+		"test:only": "mocha --require source-map-support/register \"test/**/*.test.js\" --recursive"
 	},
 	"private": true
 }
