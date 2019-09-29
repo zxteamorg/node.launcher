@@ -1,4 +1,4 @@
-import * as zxteam from "@zxteam/contract";
+import { Configuration } from "@zxteam/contract";
 import * as cfg from "@zxteam/configuration";
 
 import * as fs from "fs";
@@ -58,7 +58,8 @@ export function launcher<T>(...args: Array<any>): void {
 			}
 		}
 
-		["SIGTERM", "SIGINT"].forEach((signal: NodeJS.Signals) => process.on(signal, () => gracefulShutdown(signal)));
+		const shutdownSignals: Array<NodeJS.Signals> = ["SIGTERM", "SIGINT"];
+		shutdownSignals.forEach((signal: NodeJS.Signals) => process.on(signal, () => gracefulShutdown(signal)));
 	}
 
 	log.info("Starting application...");
@@ -97,7 +98,7 @@ export function jsonConfigurationFactory(): Promise<any> {
 	});
 }
 
-export function fileConfigurationFactory<T>(parser: (configuration: zxteam.Configuration) => T): Promise<T> {
+export function fileConfigurationFactory<T>(parser: (configuration: Configuration) => T): Promise<T> {
 	return Promise.resolve().then(() => {
 		const configFileArg = process.argv.find(w => w.startsWith("--config="));
 		if (configFileArg !== undefined) {
