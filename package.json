@@ -21,7 +21,7 @@
 	"license": "MIT",
 	"dependencies": {
 		"@zxteam/cancellation": "^6.0.23",
-		"@zxteam/configuration": "^6.0.21",
+		"@zxteam/configuration": "^6.0.23",
 		"@zxteam/contract": "^6.0.23",
 		"@zxteam/logger": "^6.0.22",
 		"typescript-ioc": "^1.2.5"
