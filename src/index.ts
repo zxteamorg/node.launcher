@@ -14,8 +14,10 @@ if (PACKAGE_GUARD in G) {
 	G[PACKAGE_GUARD] = packageVersion;
 }
 
-import { Configuration } from "@zxteam/contract";
+import { CancellationToken, Configuration } from "@zxteam/contract";
+import { ManualCancellationTokenSource, CancellationTokenSource } from "@zxteam/cancellation";
 import { fileConfiguration } from "@zxteam/configuration";
+import { CancelledError } from "@zxteam/errors";
 import { logger } from "@zxteam/logger";
 
 import * as fs from "fs";
@@ -42,9 +44,9 @@ export interface Runtime {
 	destroy(): Promise<void>;
 }
 
-export type ConfigurationFactory<T> = () => Promise<T>;
+export type ConfigurationFactory<T> = (cancellationToken: CancellationToken) => Promise<T>;
 
-export type RuntimeFactory<T> = (configuration: T) => Promise<Runtime>;
+export type RuntimeFactory<T> = (cancellationToken: CancellationToken, configuration: T) => Promise<Runtime>;
 
 export function launcher<T>(runtimeFactory: RuntimeFactory<T>): void;
 export function launcher<T>(configurationFactory: ConfigurationFactory<T>, runtimeFactory: RuntimeFactory<T>): void;
@@ -53,10 +55,16 @@ export function launcher<T>(...args: Array<any>): void {
 	const log = logger.getLogger("launcher");
 
 	async function run() {
+		let cancellationTokenSource: CancellationTokenSource = new ManualCancellationTokenSource();
+
 		process.on("unhandledRejection", reason => {
 			log.fatal("Unhandled Rejection", reason);
 			process.exit(255);
 		});
+
+		let destroyRequestCount = 0;
+		const shutdownSignals: Array<NodeJS.Signals> = ["SIGTERM", "SIGINT"];
+		shutdownSignals.forEach((signal: NodeJS.Signals) => process.on(signal, () => gracefulShutdown(signal)));
 
 		let configurationFactory: ConfigurationFactory<T>;
 		let runtimeFactory: RuntimeFactory<T>;
@@ -70,12 +78,27 @@ export function launcher<T>(...args: Array<any>): void {
 			throw new Error("Wrong arguments");
 		}
 
-		const configuration = await configurationFactory();
-		const runtime = await runtimeFactory(configuration);
+		let runtime: Runtime;
 
-		let destroyRequestCount = 0;
+		try {
+			const configuration = await configurationFactory(cancellationTokenSource.token);
+			runtime = await runtimeFactory(cancellationTokenSource.token, configuration);
+		} catch (e) {
+			if (e instanceof CancelledError) {
+				log.warn("Runtime initialization was cancelled by user");
+				process.exit(0);
+			}
+			if (log.isFatalEnabled) {
+				log.fatal(`Runtime initialization failed with error: ${e.message}`);
+			}
+			log.trace("Runtime initialization failed", e);
+			process.exit(127);
+		}
+
 		async function gracefulShutdown(signal: string) {
 			if (destroyRequestCount++ === 0) {
+				cancellationTokenSource.cancel();
+
 				if (log.isInfoEnabled) {
 					log.info(`Interrupt signal received: ${signal}`);
 				}
@@ -87,9 +110,6 @@ export function launcher<T>(...args: Array<any>): void {
 				}
 			}
 		}
-
-		const shutdownSignals: Array<NodeJS.Signals> = ["SIGTERM", "SIGINT"];
-		shutdownSignals.forEach((signal: NodeJS.Signals) => process.on(signal, () => gracefulShutdown(signal)));
 	}
 
 	log.info("Starting application...");
