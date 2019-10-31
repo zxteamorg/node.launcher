@@ -89,7 +89,11 @@ export function launcher<T>(...args: Array<any>): void {
 				process.exit(0);
 			}
 			if (log.isFatalEnabled) {
-				log.fatal(`Runtime initialization failed with error: ${e.message}`);
+				if (e instanceof Error) {
+					log.fatal(`Runtime initialization failed with ${e.constructor.name}: ${e.message}`);
+				} else {
+					log.fatal(`Runtime initialization failed with error: ${e}`);
+				}
 			}
 			log.trace("Runtime initialization failed", e);
 			process.exit(127);
@@ -122,7 +126,7 @@ export function launcher<T>(...args: Array<any>): void {
 		.catch(reason => {
 			if (log.isFatalEnabled) {
 				if (reason instanceof LaunchError) {
-					log.fatal(`Cannot launch the application due an error: ${reason.message}`);
+					log.fatal(`Cannot launch the application due an ${reason.constructor.name}: ${reason.message}`);
 				} else {
 					log.fatal(reason.message, reason);
 				}
@@ -159,9 +163,6 @@ export function fileConfigurationFactory<T>(parser: (configuration: Configuratio
 	});
 }
 
-
-
 export default launcher;
-
 
 export class LaunchError extends Error { }
