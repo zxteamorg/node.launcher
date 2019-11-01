@@ -1,6 +1,6 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "6.0.24",
+	"version": "6.0.25",
 	"description": "ZXTeam's Service Launcher",
 	"author": {
 		"name": "ZXTeam",
@@ -20,7 +20,7 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@zxteam/cancellation": "^6.0.23",
+		"@zxteam/cancellation": "^6.0.24",
 		"@zxteam/configuration": "^6.0.23",
 		"@zxteam/contract": "^6.0.23",
 		"@zxteam/logger": "^6.0.22",

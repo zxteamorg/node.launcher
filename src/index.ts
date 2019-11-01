@@ -58,13 +58,16 @@ export function launcher<T>(...args: Array<any>): void {
 		let cancellationTokenSource: CancellationTokenSource = new ManualCancellationTokenSource();
 
 		process.on("unhandledRejection", reason => {
-			log.fatal("Unhandled Rejection", reason);
+			if (reason instanceof Error) {
+				log.fatal(`Unhandled Rejection. ${reason.constructor.name}: ${reason.message}`);
+			} else {
+				log.fatal("Unhandled Rejection", reason);
+			}
 			process.exit(255);
 		});
 
 		let destroyRequestCount = 0;
 		const shutdownSignals: Array<NodeJS.Signals> = ["SIGTERM", "SIGINT"];
-		shutdownSignals.forEach((signal: NodeJS.Signals) => process.on(signal, () => gracefulShutdown(signal)));
 
 		let configurationFactory: ConfigurationFactory<T>;
 		let runtimeFactory: RuntimeFactory<T>;
@@ -83,6 +86,9 @@ export function launcher<T>(...args: Array<any>): void {
 		try {
 			const configuration = await configurationFactory(cancellationTokenSource.token);
 			runtime = await runtimeFactory(cancellationTokenSource.token, configuration);
+
+			shutdownSignals.forEach((signal: NodeJS.Signals) => process.on(signal, () => gracefulShutdown(signal)));
+
 		} catch (e) {
 			if (e instanceof CancelledError) {
 				log.warn("Runtime initialization was cancelled by user");
