@@ -58,6 +58,7 @@ export function launcher<T>(...args: Array<any>): void {
 		let cancellationTokenSource: CancellationTokenSource = new ManualCancellationTokenSource();
 
 		process.on("unhandledRejection", reason => {
+			log.debug("Unhandled Rejection", reason);
 			if (reason instanceof Error) {
 				log.fatal(`Unhandled Rejection. ${reason.constructor.name}: ${reason.message}`);
 			} else {
@@ -101,7 +102,7 @@ export function launcher<T>(...args: Array<any>): void {
 					log.fatal(`Runtime initialization failed with error: ${e}`);
 				}
 			}
-			log.trace("Runtime initialization failed", e);
+			log.debug("Runtime initialization failed", e);
 			process.exit(127);
 		}
 
