@@ -16,12 +16,9 @@ if (PACKAGE_GUARD in G) {
 
 import { CancellationToken, Configuration } from "@zxteam/contract";
 import { ManualCancellationTokenSource, CancellationTokenSource } from "@zxteam/cancellation";
-import { fileConfiguration } from "@zxteam/configuration";
+import { fileConfiguration, chainConfiguration, envConfiguration, secretsDirectoryConfiguration } from "@zxteam/configuration";
 import { CancelledError } from "@zxteam/errors";
 import { logger } from "@zxteam/logger";
-
-import * as fs from "fs";
-import * as util from "util";
 
 import { Provided as ProvidedOrig } from "typescript-ioc";
 
@@ -37,21 +34,16 @@ export function Provided<T>(provider: Provider<T>): (target: Function) => void {
 }
 export interface Provider<T> { get(): T; }
 
-const readFile = util.promisify(fs.readFile);
-
-
 export interface Runtime {
 	destroy(): Promise<void>;
 }
 
-export type ConfigurationFactory<T> = (cancellationToken: CancellationToken) => Promise<T>;
+export type ConfigurationFactory = (cancellationToken: CancellationToken) => Promise<Configuration>;
+export type RuntimeFactory = (cancellationToken: CancellationToken, rawConfiguration: Configuration) => Promise<Runtime>;
 
-export type RuntimeFactory<T> = (cancellationToken: CancellationToken, configuration: T) => Promise<Runtime>;
-
-export function launcher<T>(runtimeFactory: RuntimeFactory<T>): void;
-export function launcher<T>(configurationFactory: ConfigurationFactory<T>, runtimeFactory: RuntimeFactory<T>): void;
-
-export function launcher<T>(...args: Array<any>): void {
+export function launcher(runtimeFactory: RuntimeFactory): void;
+export function launcher(configurationFactory: ConfigurationFactory, runtimeFactory: RuntimeFactory): void;
+export function launcher(...args: Array<any>): void {
 	const log = logger.getLogger("launcher");
 
 	async function run() {
@@ -70,10 +62,10 @@ export function launcher<T>(...args: Array<any>): void {
 		let destroyRequestCount = 0;
 		const shutdownSignals: Array<NodeJS.Signals> = ["SIGTERM", "SIGINT"];
 
-		let configurationFactory: ConfigurationFactory<T>;
-		let runtimeFactory: RuntimeFactory<T>;
+		let configurationFactory: ConfigurationFactory;
+		let runtimeFactory: RuntimeFactory;
 		if (args.length === 1 && typeof args[0] === "function") {
-			configurationFactory = jsonConfigurationFactory;
+			configurationFactory = defaultConfigurationFactory;
 			runtimeFactory = args[0];
 		} else if (args.length === 2 && typeof args[0] === "function" && typeof args[1] === "function") {
 			configurationFactory = args[0];
@@ -146,28 +138,42 @@ export function launcher<T>(...args: Array<any>): void {
 		});
 }
 
-export function jsonConfigurationFactory(): Promise<any> {
-	return Promise.resolve().then(async () => {
-		const configFileArg = process.argv.find(w => w.startsWith("--config="));
-		if (configFileArg !== undefined) {
-			const configFile = configFileArg.substring(9); // Cut --config=
-			const configFileData = await readFile(configFile);
-			const configuration = JSON.parse(configFileData.toString());
-			return configuration;
-		}
-		throw new LaunchError("An argument --config is not passed");
-	});
-}
+export async function defaultConfigurationFactory(cancellationToken: CancellationToken): Promise<Configuration> {
+	const configFiles: Array<string> = process.argv
+		.filter(w => w.startsWith(defaultConfigurationFactory.CONFIG_FILE_ARG))
+		.map(arg => /* trim start */arg.substring(defaultConfigurationFactory.CONFIG_FILE_ARG.length))
+		.reverse();
 
-export function fileConfigurationFactory<T>(parser: (configuration: Configuration) => T): Promise<T> {
-	return Promise.resolve().then(() => {
-		const configFileArg = process.argv.find(w => w.startsWith("--config="));
-		if (configFileArg !== undefined) {
-			const configFile = configFileArg.substring(9); // Cut --config=
-			return parser(fileConfiguration(configFile));
-		}
-		throw new LaunchError("An argument --config is not passed");
-	});
+	const secretsDirs: Array<string> = process.argv
+		.filter(w => w.startsWith(defaultConfigurationFactory.CONFIG_SECRET_DIR_ARG))
+		.map(arg => /* trim start */arg.substring(defaultConfigurationFactory.CONFIG_SECRET_DIR_ARG.length))
+		.reverse();
+
+	const chainItems: Array<Configuration> = [];
+
+	// ENV variables have maximal priority
+	const envConf = envConfiguration();
+	chainItems.push(envConf);
+
+	// Secret directories have secondary priority
+	for (const secretsDir of secretsDirs) {
+		const secretsConfiguration = await secretsDirectoryConfiguration(secretsDir);
+		chainItems.push(secretsConfiguration);
+	}
+
+	// Config files variables have minimal priority
+	for (const configFile of configFiles) {
+		const fileConf: Configuration = await fileConfiguration(configFile);
+		chainItems.push(fileConf);
+	}
+
+	const rawConfiguration: Configuration = chainConfiguration(...chainItems);
+
+	return rawConfiguration;
+}
+export namespace defaultConfigurationFactory {
+	export const CONFIG_FILE_ARG = "--config-file=";
+	export const CONFIG_SECRET_DIR_ARG = "--config-secrets-dir=";
 }
 
 export default launcher;

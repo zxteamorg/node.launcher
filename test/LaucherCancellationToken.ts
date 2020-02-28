@@ -14,11 +14,11 @@ import { sleep } from "@zxteam/cancellation";
 import { launcher } from "../src/index";
 
 launcher(
-	async () => { return null/* no configuration */; },
+	//async () => { return null/* no configuration */; },
 	async (cancellationToken, notUsedConfiguration) => {
 
 		console.log("Enter into long sleep...");
-		await sleep(cancellationToken, 60 * 60 * 24);
+		await sleep(cancellationToken, 6000);
 
 		return {
 			async destroy() { return Promise.resolve(); }
