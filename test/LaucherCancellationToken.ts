@@ -15,7 +15,7 @@ import { launcher } from "../src/index";
 
 launcher(
 	//async () => { return null/* no configuration */; },
-	async (cancellationToken, notUsedConfiguration) => {
+	async (cancellationToken) => {
 
 		console.log("Enter into long sleep...");
 		await sleep(cancellationToken, 6000);

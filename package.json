@@ -1,6 +1,6 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "6.0.56",
+	"version": "6.0.57",
 	"description": "ZXTeam's Service Launcher",
 	"author": {
 		"name": "ZXTeam",
@@ -45,6 +45,7 @@
 	"homepage": "https://dev.zxteam.net/pub/node/launcher",
 	"scripts": {
 		"build": "zxbuild clean dist && cp README.md .dist/",
+		"compile": "zxbuild compile:src",
 		"test": "nyc --exclude test --extension=\".ts\" --reporter=lcov --reporter=text --reporter=text-summary mocha \"test/**/*.test.js\" --recursive",
 		"test:only": "mocha --require source-map-support/register \"test/**/*.test.js\" --recursive"
 	},

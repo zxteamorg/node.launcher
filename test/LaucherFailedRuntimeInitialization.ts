@@ -10,8 +10,7 @@
 import { launcher } from "../src/index";
 
 launcher(
-	//async () => { return null/* no configuration */; },
-	async (cancellationToken, notUsedConfiguration) => {
+	async (cancellationToken) => {
 
 		throw new Error("Someting wrong");
 	}

@@ -4,7 +4,7 @@ const PACKAGE_GUARD: symbol = Symbol.for(packageName);
 if (PACKAGE_GUARD in G) {
 	const conflictVersion = G[PACKAGE_GUARD];
 	// tslint:disable-next-line: max-line-length
-	const msg = `Conflict module version. Look like two different version of package ${packageName} was loaded inside the process: ${conflictVersion} and ${packageVersion}.`;
+	const msg = `Conflict module version. Looks like two different version of package ${packageName} was loaded inside the process: ${conflictVersion} and ${packageVersion}.`;
 	if (process !== undefined && process.env !== undefined && process.env.NODE_ALLOW_CONFLICT_MODULES === "1") {
 		console.warn(msg + " This treats as warning because NODE_ALLOW_CONFLICT_MODULES is set.");
 	} else {
@@ -14,9 +14,13 @@ if (PACKAGE_GUARD in G) {
 	G[PACKAGE_GUARD] = packageVersion;
 }
 
-import { CancellationToken, Configuration } from "@zxteam/contract";
+import { CancellationToken, Configuration as RawConfiguration } from "@zxteam/contract";
 import { ManualCancellationTokenSource, CancellationTokenSource } from "@zxteam/cancellation";
-import { fileConfiguration, chainConfiguration, envConfiguration, secretsDirectoryConfiguration } from "@zxteam/configuration";
+import {
+	fileConfiguration, chainConfiguration, envConfiguration,
+	secretsDirectoryConfiguration,
+	Configuration as KeyValueConfiguration
+} from "@zxteam/configuration";
 import { CancelledError } from "@zxteam/errors";
 import { logger } from "@zxteam/logger";
 
@@ -38,12 +42,37 @@ export interface Runtime {
 	destroy(): Promise<void>;
 }
 
-export type ConfigurationFactory = (cancellationToken: CancellationToken) => Promise<Configuration>;
-export type RuntimeFactory = (cancellationToken: CancellationToken, rawConfiguration: Configuration) => Promise<Runtime>;
+export type RawConfigurationLoader = (cancellationToken: CancellationToken) => Promise<RawConfiguration>;
+export type ConfigurationParser<TConfiguration> = (rawConfiguration: RawConfiguration) => TConfiguration;
 
-export function launcher(runtimeFactory: RuntimeFactory): void;
-export function launcher(configurationFactory: ConfigurationFactory, runtimeFactory: RuntimeFactory): void;
-export function launcher(...args: Array<any>): void {
+export type RuntimeFactory<TConfiguration> = (cancellationToken: CancellationToken, configuration: TConfiguration) => Promise<Runtime>;
+export type ConfigLessRuntimeFactory = (cancellationToken: CancellationToken) => Promise<Runtime>;
+
+export function launcher(runtimeFactory: ConfigLessRuntimeFactory): void;
+
+/**
+ * Launch an application using `defaultConfigurationLoader`
+ * @param configurationParser User's function that provides configuration parser
+ * @param runtimeFactory User's function that compose and start runtime
+ */
+export function launcher<TConfiguration>(
+	configurationParser: ConfigurationParser<TConfiguration>,
+	runtimeFactory: RuntimeFactory<TConfiguration>
+): void;
+
+/**
+ * Launch an application
+ * @param configurationLoader User's function that provides configuration loader
+ * @param configurationParser User's function that provides configuration parser
+ * @param runtimeFactory User's function that compose and start runtime
+ */
+export function launcher<TConfiguration>(
+	configurationLoader: RawConfigurationLoader,
+	configurationParser: ConfigurationParser<TConfiguration>,
+	runtimeFactory: RuntimeFactory<TConfiguration>
+): void;
+
+export function launcher<TConfiguration>(...args: Array<any>): void {
 	const log = logger.getLogger("launcher");
 
 	async function run() {
@@ -62,23 +91,45 @@ export function launcher(...args: Array<any>): void {
 		let destroyRequestCount = 0;
 		const shutdownSignals: Array<NodeJS.Signals> = ["SIGTERM", "SIGINT"];
 
-		let configurationFactory: ConfigurationFactory;
-		let runtimeFactory: RuntimeFactory;
-		if (args.length === 1 && typeof args[0] === "function") {
-			configurationFactory = defaultConfigurationFactory;
-			runtimeFactory = args[0];
+		interface ConfigurationStaff {
+			readonly loader: RawConfigurationLoader;
+			readonly parser: ConfigurationParser<TConfiguration>;
+		}
+
+		let runtimeStuff:
+			{
+				readonly loader: RawConfigurationLoader;
+				readonly parser: ConfigurationParser<TConfiguration>;
+				readonly runtimeFactory: RuntimeFactory<TConfiguration>
+			}
+			| { readonly parser: null; readonly runtimeFactory: ConfigLessRuntimeFactory };
+
+		let runtimeFactory: RuntimeFactory<TConfiguration>;
+		if (args.length === 3 && typeof args[0] === "function" && typeof args[1] === "function") {
+			runtimeStuff = Object.freeze({
+				loader: args[0], parser: args[1], runtimeFactory: args[2]
+			});
 		} else if (args.length === 2 && typeof args[0] === "function" && typeof args[1] === "function") {
-			configurationFactory = args[0];
-			runtimeFactory = args[1];
+			runtimeStuff = Object.freeze({
+				loader: defaultConfigurationLoader, parser: args[0], runtimeFactory: args[1]
+			});
+		} else if (args.length === 1 && typeof args[0] === "function") {
+			runtimeStuff = Object.freeze({
+				parser: null, runtimeFactory: args[0]
+			});
 		} else {
 			throw new Error("Wrong arguments");
 		}
 
 		let runtime: Runtime;
-
 		try {
-			const configuration = await configurationFactory(cancellationTokenSource.token);
-			runtime = await runtimeFactory(cancellationTokenSource.token, configuration);
+			if (runtimeStuff.parser === null) {
+				runtime = await runtimeStuff.runtimeFactory(cancellationTokenSource.token);
+			} else {
+				const rawConfiguration: RawConfiguration = await runtimeStuff.loader(cancellationTokenSource.token);
+				const parsedConfiguration: TConfiguration = runtimeStuff.parser(rawConfiguration);
+				runtime = await runtimeStuff.runtimeFactory(cancellationTokenSource.token, parsedConfiguration);
+			}
 
 			shutdownSignals.forEach((signal: NodeJS.Signals) => process.on(signal, () => gracefulShutdown(signal)));
 
@@ -138,40 +189,29 @@ export function launcher(...args: Array<any>): void {
 		});
 }
 
-export async function defaultConfigurationFactory(cancellationToken: CancellationToken): Promise<Configuration> {
-	const configFiles: Array<string> = process.argv
-		.filter(w => w.startsWith(defaultConfigurationFactory.CONFIG_FILE_ARG))
-		.map(arg => /* trim start */arg.substring(defaultConfigurationFactory.CONFIG_FILE_ARG.length))
-		.reverse();
-
-	const secretsDirs: Array<string> = process.argv
-		.filter(w => w.startsWith(defaultConfigurationFactory.CONFIG_SECRET_DIR_ARG))
-		.map(arg => /* trim start */arg.substring(defaultConfigurationFactory.CONFIG_SECRET_DIR_ARG.length))
-		.reverse();
-
-	const chainItems: Array<Configuration> = [];
-
-	// ENV variables have maximal priority
-	const envConf = envConfiguration();
-	chainItems.push(envConf);
-
-	// Secret directories have secondary priority
-	for (const secretsDir of secretsDirs) {
-		const secretsConfiguration = await secretsDirectoryConfiguration(secretsDir);
-		chainItems.push(secretsConfiguration);
+export async function defaultConfigurationLoader(cancellationToken: CancellationToken): Promise<RawConfiguration> {
+	const chainItems: Array<RawConfiguration> = [];
+	for (const arg of process.argv) {
+		if (arg.startsWith(defaultConfigurationLoader.CONFIG_FILE_ARG)) {
+			const configFile = arg.substring(defaultConfigurationLoader.CONFIG_FILE_ARG.length);
+			const fileConf: RawConfiguration = await fileConfiguration(configFile);
+			chainItems.push(fileConf);
+		} else if (arg.startsWith(defaultConfigurationLoader.CONFIG_SECRET_DIR_ARG)) {
+			const secretsDir = arg.substring(defaultConfigurationLoader.CONFIG_SECRET_DIR_ARG.length);
+			const secretsConfiguration = await secretsDirectoryConfiguration(secretsDir);
+			chainItems.push(secretsConfiguration);
+		} else if (arg === defaultConfigurationLoader.CONFIG_ENV_ARG) {
+			const envConf = envConfiguration();
+			chainItems.push(envConf);
+		}
 	}
 
-	// Config files variables have minimal priority
-	for (const configFile of configFiles) {
-		const fileConf: Configuration = await fileConfiguration(configFile);
-		chainItems.push(fileConf);
-	}
-
-	const rawConfiguration: Configuration = chainConfiguration(...chainItems);
+	const rawConfiguration: RawConfiguration = chainConfiguration(...chainItems.reverse());
 
 	return rawConfiguration;
 }
-export namespace defaultConfigurationFactory {
+export namespace defaultConfigurationLoader {
+	export const CONFIG_ENV_ARG = "--config-env";
 	export const CONFIG_FILE_ARG = "--config-file=";
 	export const CONFIG_SECRET_DIR_ARG = "--config-secrets-dir=";
 }
