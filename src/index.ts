@@ -206,7 +206,15 @@ export async function defaultConfigurationLoader(cancellationToken: Cancellation
 		}
 	}
 
-	const rawConfiguration: RawConfiguration = chainConfiguration(...chainItems.reverse());
+	if (chainItems.length === 0) {
+		throw new LaunchError(
+			"Missing configuration. Please provide at least one of: " +
+			`${defaultConfigurationLoader.CONFIG_ENV_ARG}, ${defaultConfigurationLoader.CONFIG_FILE_ARG}, ${defaultConfigurationLoader.CONFIG_SECRET_DIR_ARG}`
+		);
+	}
+
+	chainItems.reverse();
+	const rawConfiguration: RawConfiguration = chainConfiguration(...chainItems);
 
 	return rawConfiguration;
 }
