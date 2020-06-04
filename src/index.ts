@@ -17,9 +17,9 @@ if (PACKAGE_GUARD in G) {
 import { CancellationToken, Configuration as RawConfiguration } from "@zxteam/contract";
 import { ManualCancellationTokenSource, CancellationTokenSource } from "@zxteam/cancellation";
 import {
-	fileConfiguration, chainConfiguration, envConfiguration,
-	secretsDirectoryConfiguration,
-	Configuration as KeyValueConfiguration
+	fileConfiguration, tomlFileConfiguration,
+	chainConfiguration, envConfiguration,
+	secretsDirectoryConfiguration
 } from "@zxteam/configuration";
 import { CancelledError } from "@zxteam/errors";
 import { logger } from "@zxteam/logger";
@@ -196,6 +196,10 @@ export async function defaultConfigurationLoader(cancellationToken: Cancellation
 			const configFile = arg.substring(defaultConfigurationLoader.CONFIG_FILE_ARG.length);
 			const fileConf: RawConfiguration = await fileConfiguration(configFile);
 			chainItems.push(fileConf);
+		} else if (arg.startsWith(defaultConfigurationLoader.CONFIG_TOML_FILE_ARG)) {
+			const configFile = arg.substring(defaultConfigurationLoader.CONFIG_TOML_FILE_ARG.length);
+			const fileConf: RawConfiguration = await tomlFileConfiguration(configFile);
+			chainItems.push(fileConf);
 		} else if (arg.startsWith(defaultConfigurationLoader.CONFIG_SECRET_DIR_ARG)) {
 			const secretsDir = arg.substring(defaultConfigurationLoader.CONFIG_SECRET_DIR_ARG.length);
 			const secretsConfiguration = await secretsDirectoryConfiguration(secretsDir);
@@ -209,7 +213,7 @@ export async function defaultConfigurationLoader(cancellationToken: Cancellation
 	if (chainItems.length === 0) {
 		throw new LaunchError(
 			"Missing configuration. Please provide at least one of: " +
-			`${defaultConfigurationLoader.CONFIG_ENV_ARG}, ${defaultConfigurationLoader.CONFIG_FILE_ARG}, ${defaultConfigurationLoader.CONFIG_SECRET_DIR_ARG}`
+			`${defaultConfigurationLoader.CONFIG_ENV_ARG}, ${defaultConfigurationLoader.CONFIG_FILE_ARG}, ${defaultConfigurationLoader.CONFIG_TOML_FILE_ARG}, ${defaultConfigurationLoader.CONFIG_SECRET_DIR_ARG}`
 		);
 	}
 
@@ -221,6 +225,7 @@ export async function defaultConfigurationLoader(cancellationToken: Cancellation
 export namespace defaultConfigurationLoader {
 	export const CONFIG_ENV_ARG = "--config-env";
 	export const CONFIG_FILE_ARG = "--config-file=";
+	export const CONFIG_TOML_FILE_ARG = "--config-toml-file=";
 	export const CONFIG_SECRET_DIR_ARG = "--config-secrets-dir=";
 }
 
