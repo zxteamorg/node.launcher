@@ -85,16 +85,14 @@ export function launcher<TConfiguration>(...args: Array<any>): void {
 			} else {
 				log.fatal("Unhandled Rejection", reason);
 			}
-			process.exit(255);
+			fireShutdownHooks().finally(function () {
+				process.exit(255);
+			});
 		});
 
 		let destroyRequestCount = 0;
 		const shutdownSignals: Array<NodeJS.Signals> = ["SIGTERM", "SIGINT"];
 
-		interface ConfigurationStaff {
-			readonly loader: RawConfigurationLoader;
-			readonly parser: ConfigurationParser<TConfiguration>;
-		}
 
 		let runtimeStuff:
 			{
@@ -104,7 +102,6 @@ export function launcher<TConfiguration>(...args: Array<any>): void {
 			}
 			| { readonly parser: null; readonly runtimeFactory: ConfigLessRuntimeFactory };
 
-		let runtimeFactory: RuntimeFactory<TConfiguration>;
 		if (args.length === 3 && typeof args[0] === "function" && typeof args[1] === "function") {
 			runtimeStuff = Object.freeze({
 				loader: args[0], parser: args[1], runtimeFactory: args[2]
@@ -136,7 +133,9 @@ export function launcher<TConfiguration>(...args: Array<any>): void {
 		} catch (e) {
 			if (e instanceof CancelledError) {
 				log.warn("Runtime initialization was cancelled by user");
-				process.exit(0);
+				fireShutdownHooks().finally(function () {
+					process.exit(0);
+				});
 			}
 			if (log.isFatalEnabled) {
 				if (e instanceof Error) {
@@ -146,7 +145,9 @@ export function launcher<TConfiguration>(...args: Array<any>): void {
 				}
 			}
 			log.debug("Runtime initialization failed", e);
-			process.exit(127);
+			fireShutdownHooks().finally(function () {
+				process.exit(127);
+			});
 		}
 
 		async function gracefulShutdown(signal: string) {
@@ -157,6 +158,7 @@ export function launcher<TConfiguration>(...args: Array<any>): void {
 					log.info(`Interrupt signal received: ${signal}`);
 				}
 				await runtime.destroy();
+				await fireShutdownHooks();
 				process.exit(0);
 			} else {
 				if (log.isInfoEnabled) {
@@ -182,9 +184,15 @@ export function launcher<TConfiguration>(...args: Array<any>): void {
 				}
 			}
 			if (process.env.NODE_ENV === "development") {
-				setTimeout(() => process.exit(127), 1000);
+				setTimeout(() => {
+					fireShutdownHooks().finally(function () {
+						process.exit(127);
+					});
+				}, 1000);
 			} else {
-				process.exit(127);
+				fireShutdownHooks().finally(function () {
+					process.exit(127);
+				});
 			}
 		});
 }
@@ -229,6 +237,28 @@ export namespace defaultConfigurationLoader {
 	export const CONFIG_SECRET_DIR_ARG = "--config-secrets-dir=";
 }
 
+export function registerShutdownHook(cb: () => Promise<void>): void {
+	shutdownHooks.push(cb);
+}
+
 export default launcher;
 
 export class LaunchError extends Error { }
+
+const shutdownHooks: Array<() => Promise<void>> = [];
+async function fireShutdownHooks(): Promise<void> {
+	if (shutdownHooks.length > 0) {
+		const log = logger.getLogger("launcher.fireShutdownHooks");
+		log.debug("Excecuting shutdown hooks...");
+		const shutdownHooksCopy = [...shutdownHooks];
+		do {
+			const cb: () => Promise<void> = shutdownHooksCopy.pop()!;
+			try {
+				await cb();
+			} catch (e) {
+				log.warn(`An shutdown hook was finished with error: ${e.message}`);
+				log.debug("An shutdown hook was finished with error", e);
+			}
+		} while (shutdownHooksCopy.length > 0);
+	}
+}
