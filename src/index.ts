@@ -249,7 +249,7 @@ const shutdownHooks: Array<() => Promise<void>> = [];
 async function fireShutdownHooks(): Promise<void> {
 	if (shutdownHooks.length > 0) {
 		const log = logger.getLogger("launcher.fireShutdownHooks");
-		log.debug("Excecuting shutdown hooks...");
+		log.debug("Executing shutdown hooks...");
 		const shutdownHooksCopy = [...shutdownHooks];
 		do {
 			const cb: () => Promise<void> = shutdownHooksCopy.pop()!;

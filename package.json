@@ -1,6 +1,6 @@
 {
 	"name": "@zxteam/launcher",
-	"version": "6.0.63",
+	"version": "6.0.64",
 	"description": "ZXTeam's Service Launcher",
 	"author": {
 		"name": "ZXTeam",
@@ -20,15 +20,15 @@
 	],
 	"license": "MIT",
 	"dependencies": {
-		"@zxteam/cancellation": "^6.0.40",
-		"@zxteam/configuration": "^6.0.63",
+		"@zxteam/cancellation": "^6.0.62",
+		"@zxteam/configuration": "^6.0.64",
 		"@zxteam/contract": "^6.0.62",
 		"@zxteam/logger": "^6.0.40",
 		"typescript-ioc": "^1.2.6"
 	},
 	"devDependencies": {
-		"@types/node": "^11.15.16",
-		"@zxnode/build": "^0.0.34",
+		"@types/node": "^11.15.18",
+		"@zxnode/build": "^0.0.38",
 		"ts-node": "^8.10.2"
 	},
 	"engines": {
