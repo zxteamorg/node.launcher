@@ -1,3 +1,7 @@
+# DEPRECATED
+
+The project has been moved https://github.com/freemework/hosting/tree/src-typescript
+
 # ZXTeam's Launcher
 [![npm version badge](https://img.shields.io/npm/v/@zxteam/launcher.svg)](https://www.npmjs.com/package/@zxteam/launcher)
 [![downloads badge](https://img.shields.io/npm/dm/@zxteam/launcher.svg)](https://www.npmjs.org/package/@zxteam/launcher)
